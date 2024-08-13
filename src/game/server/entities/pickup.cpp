@@ -297,8 +297,8 @@ void CPickup::Tick()
 					SetRespawnTime();
 				}
 			}
-		}if(m_SpawnTick > 0)
-		else
+		}
+		if(m_SpawnTick > 0)
 		{
 			if (m_Type == POWERUP_BATTERY || m_Subtype == WEAPON_PORTAL_RIFLE)
 			{
