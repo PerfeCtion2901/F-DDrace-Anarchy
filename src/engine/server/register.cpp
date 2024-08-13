@@ -153,7 +153,10 @@ bool CRegister::StatusFromString(int *pResult, const char *pString)
 	{
 		*pResult = STATUS_OK;
 	}
-	// Remove "need_challenge" text
+	else if(str_comp(pString, "need_challenge") == 0)
+	{
+		*pResult = STATUS_NEEDCHALLENGE;
+	}
 	else if(str_comp(pString, "need_info") == 0)
 	{
 		*pResult = STATUS_NEEDINFO;
@@ -312,10 +315,6 @@ void CRegister::CProtocol::SendRegister()
 	int RequestIndex;
 	{
 		CLockScope ls(m_pShared->m_Lock);
-		if(m_pShared->m_LatestResponseStatus != STATUS_OK)
-		{
-			// Remove "registering..." message
-		}
 		RequestIndex = m_pShared->m_NumTotalRequests;
 		m_pShared->m_NumTotalRequests += 1;
 	}
@@ -358,7 +357,6 @@ void CRegister::CProtocol::SendDeleteIfRegistered(bool Shutdown)
 		// On shutdown, wait at most 1 second for the delete requests.
 		pDelete->Timeout(CTimeout{1000, 1000, 0, 0});
 	}
-	dbg_msg(ProtocolToSystem(m_Protocol), "deleting...");
 	m_pParent->m_pEngine->AddJob(std::move(pDelete));
 }
 
@@ -419,15 +417,11 @@ void CRegister::CProtocol::CJob::Run()
 	IEngine::RunJobBlocking(m_pRegister.get());
 	if(m_pRegister->State() != HTTP_DONE)
 	{
-		// TODO: log the error response content from master
-		// TODO: exponential backoff
-		dbg_msg(ProtocolToSystem(m_Protocol), "error response from master");
 		return;
 	}
 	json_value *pJson = m_pRegister->ResultJson();
 	if(!pJson)
 	{
-		dbg_msg(ProtocolToSystem(m_Protocol), "non-JSON response from master");
 		return;
 	}
 	const json_value &Json = *pJson;
@@ -435,26 +429,16 @@ void CRegister::CProtocol::CJob::Run()
 	if(StatusString.type != json_string)
 	{
 		json_value_free(pJson);
-		dbg_msg(ProtocolToSystem(m_Protocol), "invalid JSON response from master");
 		return;
 	}
 	int Status;
 	if(StatusFromString(&Status, StatusString))
 	{
-		dbg_msg(ProtocolToSystem(m_Protocol), "invalid status from master: %s", (const char *)StatusString);
 		json_value_free(pJson);
 		return;
 	}
 	{
 		CLockScope ls(m_pShared->m_Lock);
-		if(Status != STATUS_OK || Status != m_pShared->m_LatestResponseStatus)
-		{
-			dbg_msg(ProtocolToSystem(m_Protocol), "status: %s", (const char *)StatusString);
-		}
-		if(Status == m_pShared->m_LatestResponseStatus && Status == STATUS_NEEDCHALLENGE)
-		{
-			// Remove the gay error message
-		}
 		json_value_free(pJson);
 		if(m_Index > m_pShared->m_LatestResponseIndex)
 		{
@@ -475,7 +459,6 @@ void CRegister::CProtocol::CJob::Run()
 		CLockScope ls(m_pShared->m_pGlobal->m_Lock);
 		if(m_InfoSerial == m_pShared->m_pGlobal->m_LatestSuccessfulInfoSerial)
 		{
-			// Tell other requests that they need to send the info again.
 			m_pShared->m_pGlobal->m_LatestSuccessfulInfoSerial -= 1;
 		}
 	}
@@ -657,15 +640,12 @@ bool CRegister::OnPacket(const CNetChunk *pPacket)
 		const char *pToken = Unpacker.GetString(0);
 		if(Unpacker.Error())
 		{
-			dbg_msg("register", "got errorneous challenge packet from master");
 			return true;
 		}
 
-		dbg_msg("register", "got challenge token, protocol='%s' token='%s'", pProtocol, pToken);
 		int Protocol;
 		if(ProtocolFromString(&Protocol, pProtocol))
 		{
-			dbg_msg("register", "got challenge packet with unknown protocol");
 			return true;
 		}
 		m_aProtocols[Protocol].OnToken(pToken);
@@ -676,7 +656,6 @@ bool CRegister::OnPacket(const CNetChunk *pPacket)
 
 void CRegister::OnNewInfo(const char *pInfo)
 {
-	//log_trace("register", "info: %s", pInfo);
 	if(m_GotServerInfo && str_comp(m_aServerInfo, pInfo) == 0)
 	{
 		return;
