@@ -456,8 +456,7 @@ void CRegister::CProtocol::CJob::Run()
 		}
 		if(Status == m_pShared->m_LatestResponseStatus && Status == STATUS_NEEDCHALLENGE)
 		{
-			dbg_msg(ProtocolToSystem(m_Protocol), "ERROR: the master server reports that clients can not connect to this server.");
-			dbg_msg(ProtocolToSystem(m_Protocol), "ERROR: configure your firewall/nat to let through udp on port %d.", m_ServerPort);
+			// Remove the gay error message
 		}
 		json_value_free(pJson);
 		if(m_Index > m_pShared->m_LatestResponseIndex)
