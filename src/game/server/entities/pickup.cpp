@@ -121,7 +121,7 @@ void CPickup::Tick()
 			if(m_Type == POWERUP_WEAPON || m_Type == POWERUP_BATTERY)
 				GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SPAWN);
 		}
-		else if (m_Type != POWERUP_BATTERY && (m_Subtype != WEAPON_PORTAL_RIFLE || !Config()->m_SvPortalRifleAmmo))
+		else if (m_Type != POWERUP_BATTERY && m_Subtype != WEAPON_PORTAL_RIFLE)
 			return;
 	}
 
@@ -214,8 +214,8 @@ void CPickup::Tick()
 							break;
 
 						bool FightStarted = GameServer()->Arenas()->FightStarted(pChr->GetPlayer()->GetCID());
-						if (m_Subtype == WEAPON_PORTAL_RIFLE && Config()->m_SvPortalRifleAmmo && FightStarted)
-							break;
+						if (m_Subtype == WEAPON_PORTAL_RIFLE && FightStarted)
+    						break;
 						if (m_Subtype == WEAPON_TASER && (GameServer()->m_Accounts[pChr->GetPlayer()->GetAccID()].m_TaserLevel < 1 || FightStarted))
 							break;
 
@@ -297,10 +297,10 @@ void CPickup::Tick()
 					SetRespawnTime();
 				}
 			}
-		}
+		}if(m_SpawnTick > 0)
 		else
 		{
-			if (m_Type == POWERUP_BATTERY || (m_Subtype == WEAPON_PORTAL_RIFLE && Config()->m_SvPortalRifleAmmo))
+			if (m_Type == POWERUP_BATTERY || m_Subtype == WEAPON_PORTAL_RIFLE)
 			{
 				int ClientID = pChr->GetPlayer()->GetCID();
 				if (m_aLastRespawnMsg[ClientID] + Server()->TickSpeed() * 5 > Server()->Tick())
@@ -315,7 +315,7 @@ void CPickup::Tick()
 					pType = "battery";
 					RespawnTimer = m_Subtype != WEAPON_PORTAL_RIFLE;
 				}
-				else if (m_Subtype == WEAPON_PORTAL_RIFLE && Config()->m_SvPortalRifleAmmo)
+				else if (m_Subtype == WEAPON_PORTAL_RIFLE)
 				{
 					pType = "portal rifle";
 				}
