@@ -153,10 +153,7 @@ bool CRegister::StatusFromString(int *pResult, const char *pString)
 	{
 		*pResult = STATUS_OK;
 	}
-	else if(str_comp(pString, "need_challenge") == 0)
-	{
-		*pResult = STATUS_NEEDCHALLENGE;
-	}
+	// Remove "need_challenge" text
 	else if(str_comp(pString, "need_info") == 0)
 	{
 		*pResult = STATUS_NEEDINFO;
@@ -317,7 +314,7 @@ void CRegister::CProtocol::SendRegister()
 		CLockScope ls(m_pShared->m_Lock);
 		if(m_pShared->m_LatestResponseStatus != STATUS_OK)
 		{
-			dbg_msg(ProtocolToSystem(m_Protocol), "registering...");
+			// Remove "registering..." message
 		}
 		RequestIndex = m_pShared->m_NumTotalRequests;
 		m_pShared->m_NumTotalRequests += 1;
